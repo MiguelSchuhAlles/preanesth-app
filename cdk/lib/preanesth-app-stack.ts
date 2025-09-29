@@ -1,6 +1,9 @@
 import * as cdk from 'aws-cdk-lib';
 import { Construct } from 'constructs';
 import * as dynamodb from 'aws-cdk-lib/aws-dynamodb';
+import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as path from 'path';
 
 export class PreanesthAppStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -16,7 +19,7 @@ export class PreanesthAppStack extends cdk.Stack {
 
     new cdk.CfnOutput(this, 'UsersTableName', { value: usersTable.tableName });
 
-       // Patients Table
+    // Patients Table
     const patientsTable = new dynamodb.Table(this, 'PatientsTable', {
       tableName: 'PatientsTable' + '-dev',
       partitionKey: { name: 'patientId', type: dynamodb.AttributeType.STRING },
@@ -65,5 +68,23 @@ export class PreanesthAppStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'InstitutionalConfigsTableName', { value: institutionalConfigsTable.tableName });
+
+
+    // APIs
+    const createPatientLambda = new lambda.Function(this, 'CreatePatientLambda', {
+      runtime: lambda.Runtime.JAVA_17,
+      handler: 'com.myapp.lambdas.CreatePatientHandler::handleRequest',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/app/build/libs/lambda-handlers-1.0.0.jar')),
+    });
+
+    const api = new apigateway.LambdaRestApi(this, 'PreAnesthApi', {
+      handler: createPatientLambda,
+      proxy: false,  // allows you to define individual resources
+      deployOptions: { stageName: 'dev' },
+    });
+
+    // Create /patients POST
+    const patients = api.root.addResource('patients');
+    patients.addMethod('POST', new apigateway.LambdaIntegration(createPatientLambda));
   }
 }

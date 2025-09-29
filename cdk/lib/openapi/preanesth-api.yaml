@@ -1,0 +1,47 @@
+openapi: 3.0.1
+info:
+  title: Pre-Anesthetic API
+  version: 1.0.0
+paths:
+  /patients:
+    post:
+      summary: Create a new patient
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Patient'
+      responses:
+        '201':
+          description: Patient created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Patient'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Patient:
+      type: object
+      required:
+        - name
+        - cpf
+      properties:
+        name:
+          type: string
+        cpf:
+          type: string
+        dob:
+          type: string
+          format: date
+        height:
+          type: number
+        weight:
+          type: number
